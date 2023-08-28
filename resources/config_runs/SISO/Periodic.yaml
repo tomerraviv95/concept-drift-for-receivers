@@ -1,0 +1,25 @@
+# channel
+channel_type: 'SISO' # Channel type values: ['SISO','MIMO'].
+channel_model: 'Cost2100' # Physical channel models: ['Cost2100','Synthetic']
+detector_type: 'model' # 'model' or 'black_box'
+linear: True # channel linearity. Boolean value.
+fading_in_channel: False # If the channel is fading/non-fading. values: [True, False]
+snr: 10 # validation SNR value. values: float.
+
+# protocol
+block_length: 10000 # coherence block time, total size of pilot + data. values: int.
+pilot_size: 500 # pilot bits
+blocks_num: 10 # number of validation frames. values: int.
+
+# online training hyperparameters
+is_online_training: True # Whether to run the online training (as in ViterbiNet). values: [True, False].
+loss_type: 'CrossEntropy' # Loss type. values: 'BCE','CrossEntropy','MSE'.
+optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
+seed: 0 # run seed
+
+# concept drift mechanism
+mechanism: periodic # ['always','random','drift','periodic']
+period: 10
+drift_detection_method: 'DDM' # ['DDM','PHT','HT']
+drift_detection_method_hp: { 'out_control_level': 3,'min_instances_ddm': 500,
+                             'min_instances_pht': 10000,'threshold': 50, 'delta': 0.1 }
