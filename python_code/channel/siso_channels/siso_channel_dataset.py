@@ -1,5 +1,7 @@
 from typing import Tuple
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.random import default_rng
 
@@ -11,6 +13,18 @@ from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModels
 from python_code.utils.trellis_utils import break_transmitted_siso_word_to_symbols
 
+mpl.rcParams['xtick.labelsize'] = 24
+mpl.rcParams['ytick.labelsize'] = 24
+mpl.rcParams['font.size'] = 18
+mpl.rcParams['figure.autolayout'] = True
+mpl.rcParams['figure.figsize'] = [9.5, 6.45]
+mpl.rcParams['axes.titlesize'] = 28
+mpl.rcParams['axes.labelsize'] = 28
+mpl.rcParams['lines.linewidth'] = 2
+mpl.rcParams['lines.markersize'] = 8
+mpl.rcParams['legend.fontsize'] = 18
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['font.family'] = 'STIXGeneral'
 conf = Config()
 
 SISO_CHANNELS_DICT = {ChannelModels.Synthetic.name: ISIAWGNChannel,
@@ -54,3 +68,21 @@ class SISOChannel:
             raise ValueError("No such channel model!!!")
         tx, rx = self._transmit(h, snr)
         return tx, h, rx
+
+
+if __name__ == "__main__":
+    channel_dataset = SISOChannel(block_length=conf.block_length, pilots_length=conf.pilot_size)
+    total_h_mag = []
+    for t in range(conf.blocks_num):
+        tx, h, rx = channel_dataset.get_vectors(conf.snr, t)
+        total_h_mag.append(h)
+    total_h_mag = np.concatenate(total_h_mag)
+    plt.figure()
+    for i in range(MEMORY_LENGTH):
+        plt.plot(total_h_mag[:, i], label=f'user {i+ 1}', linewidth=3.2)
+    plt.ylabel(r'Magnitude')
+    plt.xlabel(r'Block Index')
+    plt.grid(True, which='both')
+    plt.legend(loc='upper right')
+    plt.ylim([0, 1])
+    plt.show()

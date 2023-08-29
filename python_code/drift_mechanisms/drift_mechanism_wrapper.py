@@ -1,5 +1,3 @@
-import random
-
 import python_code.drift_mechanisms.drift_detection_method as drift_detection
 from python_code.utils.config_singleton import Config
 
@@ -19,12 +17,6 @@ class AlwaysDriftMechanism:
     @staticmethod
     def is_train(*args):
         return True
-
-
-class RandomDriftMechanism:
-    @staticmethod
-    def is_train(*args):
-        return bool(random.getrandbits(1))
 
 
 class PeriodicMechanism:
@@ -48,7 +40,6 @@ class DriftDetectionDriven:
 
 DRIFT_MECHANISMS_DICT = {
     'always': AlwaysDriftMechanism,
-    'random': RandomDriftMechanism,
     'periodic': PeriodicMechanism,
     'drift': DriftDetectionDriven
 }

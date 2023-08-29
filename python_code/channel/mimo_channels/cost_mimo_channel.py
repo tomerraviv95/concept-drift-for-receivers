@@ -25,20 +25,14 @@ class Cost2100MIMOChannel:
             path_to_mat = os.path.join(MIMO_COST2100_DIR, f'h_one_user_moving.mat')
             h_user = scipy.io.loadmat(path_to_mat)['h_channel_response_mag'][:, :N_USER, frame_ind]
             h_user = np.transpose(h_user)
-            #print(h_user)
             total_h = h_user
         elif test_ht:
-            #h_user = np.tile([1., 0.6, 0.3, 0.2], (4, 1))
             h_user = [[0.8, 0.4, 0.4, 0.2], [0.4, 0.8, 0.4, 0.2],
                       [0.2, 0.4, 0.8, 0.4], [0.2, 0.4, 0.4, 0.8]]
             # random channel "flips"
             random.seed(frame_ind)
             user_id = random.randrange(4)
             change_prob = random.randrange(100)
-            # change_dict = {0: [0.2, 0.4, 0.4, 0.8],
-            #                1: [0.2, 0.4, 0.8, 0.4],
-            #                2: [0.4, 0.8, 0.4, 0.2],
-            #                3: [0.8, 0.4, 0.4, 0.2]}
             change_exist = {0: 0, 1: 0, 2: 0, 3: 0}
             if change_prob > 80:
                 if change_exist[user_id] == 1:
@@ -50,11 +44,6 @@ class Cost2100MIMOChannel:
                     temp = h_user[j]
                     h_user[j] = h_user[(j + 1) % n_user]
                     h_user[(j + 1) % n_user] = temp
-            # change only one user channel taps
-            #if frame_ind >= 3:
-                #h_user[0] = [0.2, 0.4, 0.4, 0.8]
-                #h_user[1] = [0.2, 0.4, 0.8, 0.4]
-                #h_user[2] = [0.4, 0.8, 0.4, 0.2]
             total_h = h_user
         else:
             for i in range(1, n_user + 1):

@@ -9,6 +9,7 @@ from torch.optim import RMSprop, Adam, SGD
 import python_code.drift_mechanisms.drift_detection_method as drift_detection
 from python_code import DEVICE
 from python_code.channel.channel_dataset import ChannelModelDataset
+from python_code.channel.channels_hyperparams import N_USER
 from python_code.drift_mechanisms.drift_mechanism_wrapper import DriftMechanismWrapper
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModes
@@ -126,7 +127,7 @@ class Trainer(object):
         if 'SISO' in conf.channel_type:
             n_users = 1
         else:
-            n_users = self.n_user  # assumption 4
+            n_users = N_USER
         if conf.mechanism == 'drift':  # create drift detector only if specified
             for i in range(n_users):
                 drift_detector_arr.append(drift_detection.DriftDetector(conf.drift_detection_method))
@@ -144,21 +145,23 @@ class Trainer(object):
             block_idn_train.append(0)
             if (conf.is_online_training and drift_mechanism.is_train(block_ind)) or block_ind == 0:
                 print('re-training')
-                if conf.channel_type is ChannelModes.MIMO and drift_detector_en:
+                if conf.channel_type in ChannelModes.MIMO.name and drift_detector_en:
                     for idx in range(n_users):
-                        user_alarm = drift_detection.alarm[idx]
-                        if block_ind == 0 or user_alarm[block_ind - 1] == 1:
-                            self.train_user[idx] = True
-                            print("Train user {}".format(idx))
-                        else:
-                            self.train_user[idx] = True  # TODO change back to false for modular
+                        # user_alarm = drift_detection.alarm[idx]
+                        self.train_user[idx] = True
+                        # if block_ind == 0 or user_alarm[block_ind - 1] == 1:
+                        #
+                        #     print("Train user {}".format(idx))
+                        # else:
+                        #     self.train_user[idx] = False
                 # re-train the detector
                 self._online_training(tx_pilot, rx_pilot)
                 block_idn_train[block_ind] = 1
 
             # detect data part after training on the pilot part
             detected_word = self.forward(rx_data, self.probs_vec)
-            if conf.channel_type is ChannelModes.MIMO:
+
+            if conf.channel_type in ChannelModes.MIMO.name:
                 detected_pilot = self.forward_pilot(rx_pilot, tx_pilot, self.pilots_probs_vec)
             else:
                 detected_pilot = self.forward(rx_pilot, self.probs_vec)
@@ -178,15 +181,6 @@ class Trainer(object):
             print(f'current: {block_ind, ber}')
             total_ber.append(ber)
             self.init_priors()
-
-        # Save the alarm indications for plotter
-        if drift_detector_en:
-            global alarms_dict
-            alarms_dict[conf.drift_detection_method] = drift_detection.alarm.copy()
-            drift_detection.avergae_num_retraining(conf.drift_detection_method)
-
-        if conf.channel_type is ChannelModes.MIMO and drift_detector_en:
-            self.plot_kl()
 
         print(f'Final ser: {sum(total_ber) / len(total_ber)}, Total Re-trains: {sum(block_idn_train)}')
         return total_ber, block_idn_train

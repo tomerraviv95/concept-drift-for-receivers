@@ -6,6 +6,7 @@ __pycache__/
 .idea/
 results/figures/
 results/plots/
+results/paper/
 
 # C extensions
 *.so

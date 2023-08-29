@@ -1,4 +1,3 @@
-import numpy as np
 from skmultiflow.drift_detection import DDM, PageHinkley
 from skmultiflow.drift_detection.base_drift_detector import BaseDriftDetector
 
@@ -40,7 +39,6 @@ class PageHinkley(BaseDriftDetector):
         The forgetting factor, used to weight the observed value
         and the mean.
         """
-
 
     def __init__(self, min_instances=30, delta=0.005, threshold=50, alpha=1 - 0.0001):
         super().__init__()
@@ -106,25 +104,6 @@ def reset_alarm(index):
     alarm[index] = []
 
 
-def avergae_num_retraining(drift_detection_method):
-    # calculate new average num of training
-    global alarm, avg_training, training_log
-    global avg_training_ddm, avg_training_pht, avg_training_ht
-    avg_training = training_log[drift_detection_method][0]  # take curr avg training number for this method
-    trials = training_log[drift_detection_method][1]
-    alarm_sum = np.sum(alarm, axis=0)
-    alarm_sum = [[0 if alarm_sum[i] == 0 else 1 for i, value in enumerate(alarm_sum)]]
-    for ai in range(len(alarm_sum)):  # FIXME for MIMO
-        if len(alarm_sum[ai]) > 0:
-            avg_training = (avg_training * trials + alarm_sum[ai].count(1)) / (trials + 1)
-
-    # update new statistics
-    training_log[drift_detection_method][0] = avg_training
-    training_log[drift_detection_method][1] = trials + 1
-    print(drift_detection_method + " avg: " + str(training_log[drift_detection_method][0]) + "trial: " +
-          str(training_log[drift_detection_method][1]))
-
-
 class DriftDetector:
 
     def __init__(self, type: str):
@@ -154,7 +133,6 @@ class DriftDDM:
     def set_hyper(self, args):
         if args == 'Default':
             return
-        # self.ddm.warning_level = args['warning']
         self.ddm.out_control_level = args['out_control_level']
         self.ddm.min_instances = args['min_instances_ddm']
 
@@ -209,34 +187,20 @@ class DriftHT:
     def __init__(self, index):
         self.threshold = 1e-5
         reset_alarm(index)
-        # global alarm
-        # initial_len = len(alarm)
-        # if index > initial_len - 1:
-        #     alarm.append([])
-        # alarm[index] = []
 
     def set_hyper(self, args):
         if args == 'Default':
             return
-        self.threshold = args['threshold']
+        self.threshold = args['ht_threshold']
 
     def analyze_samples(self, index, user_ht_value):
         global alarm
         flag_alarm = 0.0
+        print(index,user_ht_value)
 
         # receives the ht value already
         if user_ht_value > self.threshold:
             flag_alarm = 1.0
-
-        # if self.model:
-        #     kl_vec = samples_vector[0]
-        #
-        # else:
-        #     kl_vec = samples_vector[1]
-        #     # if np.shape(kl_vec[0])[0] and abs(kl_vec[-1][index] - kl_vec[-2][index]) > self.threshold:
-        #     #     flag_alarm = 1.0
-        # if np.shape(kl_vec)[0] > 1 and abs(kl_vec[-1][index] - kl_vec[-2][index]) > self.threshold:
-        #     flag_alarm = 1.0
 
         alarm[index].append(flag_alarm)
 

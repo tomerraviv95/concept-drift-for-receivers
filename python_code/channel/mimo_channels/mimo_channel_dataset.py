@@ -1,6 +1,8 @@
 from typing import Tuple
 
+import matplotlib as mpl
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy.random import default_rng
 
 from python_code.channel.channels_hyperparams import N_ANT, N_USER
@@ -10,6 +12,18 @@ from python_code.channel.modulator import BPSKModulator
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModels
 
+mpl.rcParams['xtick.labelsize'] = 24
+mpl.rcParams['ytick.labelsize'] = 24
+mpl.rcParams['font.size'] = 18
+mpl.rcParams['figure.autolayout'] = True
+mpl.rcParams['figure.figsize'] = [10, 8]
+mpl.rcParams['axes.titlesize'] = 28
+mpl.rcParams['axes.labelsize'] = 22
+mpl.rcParams['lines.linewidth'] = 2
+mpl.rcParams['lines.markersize'] = 8
+mpl.rcParams['legend.fontsize'] = 18
+mpl.rcParams['mathtext.fontset'] = 'stix'
+mpl.rcParams['font.family'] = 'STIXGeneral'
 conf = Config()
 
 MIMO_CHANNELS_DICT = {ChannelModels.Synthetic.name: SEDChannel,
@@ -47,3 +61,25 @@ class MIMOChannel:
             raise ValueError("No such channel model!!!")
         tx, rx = self._transmit(h, snr)
         return tx, h, rx
+
+
+if __name__ == "__main__":
+    channel_dataset = MIMOChannel(block_length=conf.block_length, pilots_length=conf.pilot_size)
+    total_h_mag = []
+    for t in range(conf.blocks_num):
+        tx, h, rx = channel_dataset.get_vectors(conf.snr, t)
+        total_h_mag.append(h)
+    total_h_mag = np.array(total_h_mag)
+    fig, axs = plt.subplots(N_ANT, sharex=True)
+    for j in range(N_ANT):
+        current_axis = axs[j]
+        for i in range(N_USER):
+            current_axis.plot(total_h_mag[:, j, i], label=f'user {i + 1}', linewidth=3.2)
+
+        current_axis.grid(True, which='both')
+        current_axis.set_ylim([0, 1])
+        current_axis.set_ylabel(f'Ant. {j + 1}')
+    fig.supxlabel(r'Block Index')
+    fig.supylabel(r'Magnitude')
+    axs[0].legend(loc='upper right')
+    plt.show()
