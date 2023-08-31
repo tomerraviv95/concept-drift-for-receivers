@@ -1,6 +1,5 @@
 from typing import List
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
@@ -16,7 +15,6 @@ from python_code.utils.constants import HALF
 conf = Config()
 ITERATIONS = 3
 EPOCHS = 250
-WINDOW = 1
 
 dist_probs_vec = []
 KL_P_X = [[] for i in range(N_USER)]

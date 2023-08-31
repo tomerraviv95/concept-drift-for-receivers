@@ -149,11 +149,6 @@ class Trainer(object):
                     for idx in range(n_users):
                         # user_alarm = drift_detection.alarm[idx]
                         self.train_user[idx] = True
-                        # if block_ind == 0 or user_alarm[block_ind - 1] == 1:
-                        #
-                        #     print("Train user {}".format(idx))
-                        # else:
-                        #     self.train_user[idx] = False
                 # re-train the detector
                 self._online_training(tx_pilot, rx_pilot)
                 block_idn_train[block_ind] = 1
