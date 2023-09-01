@@ -6,7 +6,7 @@ import torch
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.optim import RMSprop, Adam, SGD
 
-import python_code.drift_mechanisms.drift_detection_method as drift_detection
+import python_code.drift_mechanisms.pht as drift_detection
 from python_code import DEVICE
 from python_code.channel.channel_dataset import ChannelModelDataset
 from python_code.channel.channels_hyperparams import N_USER
@@ -113,7 +113,6 @@ class Trainer(object):
         print(f'Evaluating concept drift of type: {conf.mechanism}')
         total_ber = []
         block_idn_train = []  # to keep track of index of block where the model was retrained
-        drift_detector_en = 0
         drift_detector_arr = []
         if conf.mechanism == 'drift':
             print(conf.drift_detection_method)
@@ -131,9 +130,6 @@ class Trainer(object):
         if conf.mechanism == 'drift':  # create drift detector only if specified
             for i in range(n_users):
                 drift_detector_arr.append(drift_detection.DriftDetector(conf.drift_detection_method))
-                drift_detector_arr[i].initialize(i)
-                drift_detector_arr[i].set_hyper(conf.drift_detection_method_hp)
-            drift_detector_en = 1
         # detect sequentially
         for block_ind in range(conf.blocks_num):
             print('*' * 20)
@@ -145,7 +141,7 @@ class Trainer(object):
             block_idn_train.append(0)
             if (conf.is_online_training and drift_mechanism.is_train(block_ind)) or block_ind == 0:
                 print('re-training')
-                if conf.channel_type in ChannelModes.MIMO.name and drift_detector_en:
+                if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == 'drift':
                     for idx in range(n_users):
                         # user_alarm = drift_detection.alarm[idx]
                         self.train_user[idx] = True
@@ -161,7 +157,7 @@ class Trainer(object):
             else:
                 detected_pilot = self.forward(rx_pilot, self.probs_vec)
             error_rate = calculate_error_rate(detected_pilot, tx_pilot[:, :rx.shape[1]])
-            if drift_detector_en:
+            if conf.mechanism == 'drift':
                 for i in range(n_users):
                     if conf.drift_detection_method == 'DDM':
                         drift_detector_arr[i].analyze_samples(i, error_rate[:, i])

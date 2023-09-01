@@ -1,4 +1,4 @@
-import python_code.drift_mechanisms.drift_detection_method as drift_detection
+import python_code.drift_mechanisms.pht as drift_detection
 from python_code.utils.config_singleton import Config
 
 conf = Config()

@@ -8,6 +8,7 @@ class PlotType(Enum):
     ViterbiNetFigure = 'ViterbiNetFigure'
     RNNFigure = 'RNNFigure'
     DeepSICFigure = 'DeepSICFigure'
+    DNNFigure = 'DNNFigure'
 
 
 def get_config(label_name: str) -> Tuple[List[Dict], list, list, str, str, str]:
@@ -78,6 +79,33 @@ def get_config(label_name: str) -> Tuple[List[Dict], list, list, str, str, str]:
              },
             {'drift_detection_method': 'PHT',
              'drift_detection_method_hp': {'min_instances_pht': 40000, 'threshold': 2, 'delta': 1},
+             },
+            {'drift_detection_method': 'HT',
+             'drift_detection_method_hp': {'ht_threshold': 2.5},
+             },
+        ]
+        values = list(range(50))
+        xlabel, ylabel = 'block_index', 'BER'
+        plot_type = 'plot_ber_aggregated'
+    elif label_name == PlotType.DNNFigure.name:
+        params_dicts = [
+            {'snr': 12, 'detector_type': DetectorType.black_box.name, 'channel_type': ChannelModes.MIMO.name,
+             'blocks_num': 50, 'channel_model': ChannelModels.Cost2100.name,
+             'period': 5, 'block_length': 10000, 'pilot_size': 1000, 'drift_detection_method': None,
+             'drift_detection_method_hp': None
+             }
+        ]
+        methods_list = [
+            'Periodic',
+            'DriftDetectionDriven',
+            'Always'
+        ]
+        drift_detection_methods = [
+            {'drift_detection_method': 'DDM',
+             'drift_detection_method_hp': {'out_control_level': 4, 'min_instances_ddm': 3000},
+             },
+            {'drift_detection_method': 'PHT',
+             'drift_detection_method_hp': {'min_instances_pht': 30000, 'threshold': 2, 'delta': 1},
              },
             {'drift_detection_method': 'HT',
              'drift_detection_method_hp': {'ht_threshold': 2.5},

@@ -1,13 +1,16 @@
-from skmultiflow.drift_detection import DDM, PageHinkley
+from skmultiflow.drift_detection import PageHinkley
 from skmultiflow.drift_detection.base_drift_detector import BaseDriftDetector
 
 alarm = [[]]
-avg_training = 0
-training_log = {'DDM': [0, 0], 'PHT': [0, 0], 'HT': [0, 0]}
-avg_training_ddm = 0
-avg_training_pht = 0
-avg_training_ht = 0
-MAX_SAMPLES = 3000
+sums = []
+
+
+def reset_alarm(index):
+    global alarm
+    initial_len = len(alarm)
+    if index > initial_len - 1:
+        alarm.append([])
+    alarm[index] = []
 
 
 class PageHinkley(BaseDriftDetector):
@@ -96,64 +99,6 @@ class PageHinkley(BaseDriftDetector):
             self.in_concept_change = True
 
 
-def reset_alarm(index):
-    global alarm
-    initial_len = len(alarm)
-    if index > initial_len - 1:
-        alarm.append([])
-    alarm[index] = []
-
-
-class DriftDetector:
-
-    def __init__(self, type: str):
-        self.drift_detector = DRIFT_ALGORITHM_DICT[type]
-
-    def initialize(self, index):
-        return self.drift_detector.__init__(self, index)
-
-    def analyze_samples(self, index, samples_vector):
-        return self.drift_detector.analyze_samples(self, index, samples_vector)
-
-    # Set hyper parameters for method if were set by config file
-    def set_hyper(self, args):
-        return self.drift_detector.set_hyper(self, args)
-
-    # Return name of drift detection method
-    def alarm_dict_key(self):
-        return self.drift_detector.alarm_dict_key(self)
-
-
-class DriftDDM:
-
-    def __init__(self, index):
-        self.ddm = DDM()
-        reset_alarm(index)
-
-    def set_hyper(self, args):
-        if args == 'Default':
-            return
-        self.ddm.out_control_level = args['out_control_level']
-        self.ddm.min_instances = args['min_instances_ddm']
-
-    def alarm_dict_key(self):
-        return 'ddm alarm: ' + str(self.ddm.out_control_level)
-
-    def analyze_samples(self, index, samples_vector):
-        # DDM analyzez the error rate given by comparing pilot bits ONLY
-        global alarm
-        alarms = []
-        for sample in samples_vector:
-            self.ddm.add_element(sample.cpu())
-            alarms.append(self.ddm.detected_change())
-        should_retrain = any(alarms)
-        if should_retrain:
-            self.ddm.reset()
-            alarm[index].append(1.0)
-        else:
-            alarm[index].append(0.0)
-
-
 class DriftPHT:
 
     def __init__(self, index):
@@ -161,12 +106,14 @@ class DriftPHT:
         reset_alarm(index)
 
     def analyze_samples(self, index, samples_vector):
-        global alarm
+        global alarm, sums
         alarms = []
+
         for sample in samples_vector:
             self.pht.add_element(sample.cpu())
             alarms.append(self.pht.in_concept_change)
-        # print(f"mean: {self.pht.x_mean},{self.pht.sum},Alarms: {sum(alarms)}")
+        sums.append(self.pht.sum)
+
         if sum(alarms) > 0.01 * len(samples_vector):
             self.pht.reset()
             alarm[index].append(1.0)
@@ -180,36 +127,3 @@ class DriftPHT:
         self.pht.threshold = args['threshold']
         self.pht.delta = args['delta']
         self.pht.min_instances = args['min_instances_pht']
-
-
-class DriftHT:
-
-    def __init__(self, index):
-        self.threshold = 1e-5
-        reset_alarm(index)
-
-    def set_hyper(self, args):
-        if args == 'Default':
-            return
-        self.threshold = args['ht_threshold']
-
-    def analyze_samples(self, index, user_ht_value):
-        global alarm
-        flag_alarm = 0.0
-        print(index,user_ht_value)
-
-        # receives the ht value already
-        if user_ht_value > self.threshold:
-            flag_alarm = 1.0
-
-        alarm[index].append(flag_alarm)
-
-    def alarm_dict_key(self):
-        return 'HT threshold: ' + str(self.threshold)
-
-
-DRIFT_ALGORITHM_DICT = {
-    'DDM': DriftDDM,
-    'PHT': DriftPHT,
-    'HT': DriftHT
-}
