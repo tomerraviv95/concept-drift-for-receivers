@@ -139,7 +139,7 @@ def populate_sers_dict(all_curves: List[Tuple[float, str]], names: List[str], pl
                 sers_dict[method_name] = agg_ser
                 total_actions_dict[method_name] = np.sum(train_idn[0])
             else:
-                raise ValueError("No such plot type!")
+                raise ValueError("No such plot mechanism_type!")
 
     return cur_name, sers_dict, train_annotation_dict, total_actions_dict
 

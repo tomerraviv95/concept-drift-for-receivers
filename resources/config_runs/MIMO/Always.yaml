@@ -3,7 +3,7 @@ run_name: 'test' # the name of the experiment
 seed: 0 # run seed
 
 # channel
-channel_type: 'MIMO' # Channel type values: ['SISO','MIMO'].
+channel_type: 'MIMO' # Channel mechanism_type values: ['SISO','MIMO'].
 channel_model: 'Synthetic' # Physical channel models: ['Cost2100','Synthetic']
 detector_type: 'model' # 'model' or 'black_box'
 linear: True # channel linearity. Boolean value.
@@ -18,8 +18,8 @@ buffer: True # keep an internal buffer for pilots
 
 # online training hyperparameters
 is_online_training: True # Whether to run the online training (as in ViterbiNet). values: [True, False].
-loss_type: 'CrossEntropy' # Loss type. values: 'BCE','CrossEntropy','MSE'.
-optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
+loss_type: 'CrossEntropy' # Loss mechanism_type. values: 'BCE','CrossEntropy','MSE'.
+optimizer_type: 'Adam' # Optimizer mechanism_type. values: 'Adam','RMSprop','SGD'.
 
 # concept drift mechanism
 mechanism: 'always' # ['always','random',...]

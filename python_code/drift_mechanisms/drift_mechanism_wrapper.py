@@ -1,4 +1,7 @@
-import python_code.drift_mechanisms.pht as drift_detection
+from python_code.channel.channels_hyperparams import N_USER
+from python_code.drift_mechanisms.ddm import DriftDDM
+from python_code.drift_mechanisms.ht import DriftHT
+from python_code.drift_mechanisms.pht import DriftPHT
 from python_code.utils.config_singleton import Config
 
 conf = Config()
@@ -6,40 +9,55 @@ conf = Config()
 
 class DriftMechanismWrapper:
 
-    def __init__(self, type: str):
-        self.drift_mechanism = DRIFT_MECHANISMS_DICT[type]
+    def __init__(self, mechanism_type: str):
+        if 'SISO' in conf.channel_type:
+            self.n_users = 1
+        else:
+            self.n_users = N_USER
+        self.drift_mechanism_list = [DRIFT_MECHANISMS_DICT[mechanism_type]() for _ in range(self.n_users)]
 
-    def is_train(self, *args):
-        return self.drift_mechanism.is_train(*args)
-
+    def is_train(self, kwargs):
+        if kwargs['block_ind'] == 0:
+            return True
+        for user,drift_mechanism in enumerate(self.drift_mechanism_list):
+            if drift_mechanism.is_train(user=user,**kwargs):
+                return True
+        return False
 
 class AlwaysDriftMechanism:
-    @staticmethod
-    def is_train(*args):
+    def is_train(self,**kwargs):
         return True
 
 
 class PeriodicMechanism:
-    @staticmethod
-    def is_train(*args):
-        if args[0] % conf.period == 0 or 0:
+    def is_train(self,block_ind,**kwargs):
+        if block_ind % conf.period == 0:
             return True
 
 
 class DriftDetectionDriven:
-    @staticmethod
-    def is_train(*args):
-        if args[0] == 0:
-            return True
-        alarm_len = len(drift_detection.alarm)
-        for ai in range(alarm_len):
-            if drift_detection.alarm[ai][args[0] - 1] == 1:  # retrain only when alarm was signaled
-                return True
-        return False
+    def __init__(self):
+        self.drift_detector = DATA_DRIVEN_DRIFT_DETECTORS_DICT[conf.drift_detection_method]
 
+    def is_train(self,user,**kwargs):
+        if conf.drift_detection_method == 'DDM':
+            return self.drift_detector.check_drift(kwargs['error_rate'][:, user])
+        elif conf.drift_detection_method == 'PHT':
+            return self.drift_detector.check_drift(kwargs['rx'][:, user])
+        elif conf.drift_detection_method == 'HT':
+            return self.drift_detector.check_drift(kwargs['ht'][user])
+        else:
+            raise ValueError('Drift detection method not recognized!!!')
 
 DRIFT_MECHANISMS_DICT = {
     'always': AlwaysDriftMechanism,
     'periodic': PeriodicMechanism,
     'drift': DriftDetectionDriven
+}
+
+DATA_DRIVEN_DRIFT_DETECTORS_DICT = {
+    'DDM': DriftDDM(alpha=conf.drift_detection_method_hp['alpha_ddm'], beta=conf.drift_detection_method_hp['beta_ddm']),
+    'PHT': DriftPHT(beta=conf.drift_detection_method_hp['beta_pht'], delta=conf.drift_detection_method_hp['delta_pht'],
+                    lambda_value=conf.drift_detection_method_hp['lambda_pht']),
+    'HT': DriftHT(threshold=conf.drift_detection_method_hp['ht_threshold'])
 }

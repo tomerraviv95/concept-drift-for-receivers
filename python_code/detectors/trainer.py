@@ -6,7 +6,6 @@ import torch
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.optim import RMSprop, Adam, SGD
 
-import python_code.drift_mechanisms.pht as drift_detection
 from python_code import DEVICE
 from python_code.channel.channel_dataset import ChannelModelDataset
 from python_code.channel.channels_hyperparams import N_USER
@@ -36,6 +35,7 @@ class Trainer(object):
         # initialize matrices, datasets and detector
         self._initialize_dataloader()
         self._initialize_detector()
+        self.ht = None
         self.softmax = torch.nn.Softmax(dim=1)  # Single symbol probability inference
 
     def get_name(self):
@@ -112,8 +112,7 @@ class Trainer(object):
         """
         print(f'Evaluating concept drift of type: {conf.mechanism}')
         total_ber = []
-        block_idn_train = []  # to keep track of index of block where the model was retrained
-        drift_detector_arr = []
+        block_idn_train = [0 for _ in range(conf.blocks_num)]  # to keep track of index of block where the model was retrained
         if conf.mechanism == 'drift':
             print(conf.drift_detection_method)
 
@@ -121,15 +120,8 @@ class Trainer(object):
         transmitted_words, received_words, hs = self.channel_dataset.__getitem__(snr_list=[conf.snr])
         # either None or in case of DeepSIC intializes the priors
         self.init_priors()
-        # initialize concept drift type
+        # initialize concept drift mechanism_type
         drift_mechanism = DriftMechanismWrapper(conf.mechanism)
-        if 'SISO' in conf.channel_type:
-            n_users = 1
-        else:
-            n_users = N_USER
-        if conf.mechanism == 'drift':  # create drift detector only if specified
-            for i in range(n_users):
-                drift_detector_arr.append(drift_detection.DriftDetector(conf.drift_detection_method))
         # detect sequentially
         for block_ind in range(conf.blocks_num):
             print('*' * 20)
@@ -138,35 +130,22 @@ class Trainer(object):
             # split words into data and pilot part
             tx_pilot, tx_data = tx[:conf.pilot_size], tx[conf.pilot_size:]
             rx_pilot, rx_data = rx[:conf.pilot_size], rx[conf.pilot_size:]
-            block_idn_train.append(0)
-            if (conf.is_online_training and drift_mechanism.is_train(block_ind)) or block_ind == 0:
-                print('re-training')
-                if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == 'drift':
-                    for idx in range(n_users):
-                        # user_alarm = drift_detection.alarm[idx]
-                        self.train_user[idx] = True
-                # re-train the detector
-                self._online_training(tx_pilot, rx_pilot)
-                block_idn_train[block_ind] = 1
-
-            # detect data part after training on the pilot part
-            detected_word = self.forward(rx_data, self.probs_vec)
-
             if conf.channel_type in ChannelModes.MIMO.name:
                 detected_pilot = self.forward_pilot(rx_pilot, tx_pilot, self.pilots_probs_vec)
             else:
                 detected_pilot = self.forward(rx_pilot, self.probs_vec)
             error_rate = calculate_error_rate(detected_pilot, tx_pilot[:, :rx.shape[1]])
-            if conf.mechanism == 'drift':
-                for i in range(n_users):
-                    if conf.drift_detection_method == 'DDM':
-                        drift_detector_arr[i].analyze_samples(i, error_rate[:, i])
-                    elif conf.drift_detection_method == 'PHT':
-                        drift_detector_arr[i].analyze_samples(i, rx[:, i])
-                    elif conf.drift_detection_method == 'HT':
-                        drift_detector_arr[i].analyze_samples(i, self.ht[i])
-                    else:
-                        raise ValueError('Drift detection method not recognized!!!')
+            kwargs = {'block_ind':block_ind,'error_rate':error_rate,'rx':rx,'ht':self.ht}
+            if (conf.is_online_training and drift_mechanism.is_train(kwargs)):
+                print('re-training')
+                if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == 'drift':
+                    for idx in range(N_USER):
+                        self.train_user[idx] = True
+                # re-train the detector
+                self._online_training(tx_pilot, rx_pilot)
+                block_idn_train[block_ind] = 1
+            # detect data part after training on the pilot part
+            detected_word = self.forward(rx_data, self.probs_vec)
             # calculate accuracy
             ber = calculate_ber(detected_word, tx_data[:, :rx.shape[1]])
             print(f'current: {block_ind, ber}')

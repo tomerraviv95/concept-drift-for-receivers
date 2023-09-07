@@ -115,6 +115,6 @@ def get_config(label_name: str) -> Tuple[List[Dict], list, list, str, str, str]:
         xlabel, ylabel = 'block_index', 'BER'
         plot_type = 'plot_ber_aggregated'
     else:
-        raise ValueError('No such plot type!!!')
+        raise ValueError('No such plot mechanism_type!!!')
 
     return params_dicts, methods_list, values, xlabel, ylabel, plot_type, drift_detection_methods
