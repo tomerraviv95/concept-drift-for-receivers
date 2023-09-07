@@ -12,16 +12,18 @@ from python_code.channel.modulator import BPSKModulator
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModels
 
+R = 9 / 6.45
+
 mpl.rcParams['xtick.labelsize'] = 24
 mpl.rcParams['ytick.labelsize'] = 24
 mpl.rcParams['font.size'] = 18
 mpl.rcParams['figure.autolayout'] = True
-mpl.rcParams['figure.figsize'] = [10, 8]
+mpl.rcParams['figure.figsize'] = [9.5 * R, 6.45 * R]
 mpl.rcParams['axes.titlesize'] = 28
-mpl.rcParams['axes.labelsize'] = 22
+mpl.rcParams['axes.labelsize'] = 28
 mpl.rcParams['lines.linewidth'] = 2
 mpl.rcParams['lines.markersize'] = 8
-mpl.rcParams['legend.fontsize'] = 18
+mpl.rcParams['legend.fontsize'] = 18* R
 mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 conf = Config()
@@ -79,7 +81,7 @@ if __name__ == "__main__":
         current_axis.grid(True, which='both')
         current_axis.set_ylim([0, 1])
         current_axis.set_ylabel(f'Ant. {j + 1}')
-    fig.supxlabel(r'Block Index')
-    fig.supylabel(r'Magnitude')
-    axs[0].legend(loc='upper right')
+    fig.supxlabel(r'Block Index',fontsize=28* R)
+    fig.supylabel(r'Magnitude',fontsize=28* R)
+    axs[3].legend(loc='lower right')
     plt.show()
