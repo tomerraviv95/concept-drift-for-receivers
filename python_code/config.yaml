@@ -1,26 +1,26 @@
 # channel
-channel_type: 'MIMO' # Channel mechanism_type values: ['SISO','MIMO'].
+channel_type: 'SISO' # Channel mechanism_type values: ['SISO','MIMO'].
 channel_model: 'Cost2100' # Physical channel models: ['Cost2100','Synthetic']
-detector_type: 'model' # 'model' or 'black_box'
+detector_type: 'black_box' # 'model' or 'black_box'
 linear: True # channel linearity. Boolean value.
 fading_in_channel: False # If the channel is fading/non-fading. values: [True, False]
 snr: 12 # validation SNR value. values: float.
 
 # protocol
 block_length: 10000 # coherence block time, total size of pilot + data. values: int.
-pilot_size: 500 # pilot bits
-blocks_num: 50 # number of validation frames. values: int.
+pilot_size: 2000 # pilot bits
+blocks_num: 100 # number of validation frames. values: int.
 
 # online training hyperparameters
 is_online_training: True # Whether to run the online training (as in ViterbiNet). values: [True, False].
 loss_type: 'CrossEntropy' # Loss mechanism_type. values: 'BCE','CrossEntropy','MSE'.
 optimizer_type: 'Adam' # Optimizer mechanism_type. values: 'Adam','RMSprop','SGD'.
-seed: 0 # run seed
+seed: 100 # run seed
 
 # concept drift mechanism
 mechanism: drift # ['always','drift','periodic']
 period: 10
 drift_detection_method: 'PHT' # ['DDM','PHT','HT']
-drift_detection_method_hp: { 'alpha_ddm': 1,'beta_ddm': 0.33,
-                             'beta_pht': 0.3, 'delta_pht': 0.1,'lambda_pht': 0.03,
+drift_detection_method_hp: { 'alpha_ddm': 3, 'beta_ddm': 0.2,
+                             'beta_pht': 0.5, 'delta_pht': 0.8, 'lambda_pht': 0.01,
                               'ht_threshold' : 2.5}

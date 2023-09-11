@@ -1,28 +1,25 @@
-# general
-run_name: 'test' # the name of the experiment
-seed: 0 # run seed
-
 # channel
-channel_type: 'MIMO' # Channel mechanism_type values: ['SISO','MIMO'].
-channel_model: 'Synthetic' # Physical channel models: ['Cost2100','Synthetic']
+channel_type: 'SISO' # Channel mechanism_type values: ['SISO','MIMO'].
+channel_model: 'Cost2100' # Physical channel models: ['Cost2100','Synthetic']
 detector_type: 'model' # 'model' or 'black_box'
 linear: True # channel linearity. Boolean value.
 fading_in_channel: False # If the channel is fading/non-fading. values: [True, False]
-snr: 12 # validation SNR value. values: float.
+snr: 10 # validation SNR value. values: float.
 
 # protocol
-block_length: 5100 # coherence block time, total size of pilot + data. values: int.
-pilot_size: 100 # pilot bits
-blocks_num: 100 # number of validation frames. values: int.
-buffer: True # keep an internal buffer for pilots
+block_length: 10000 # coherence block time, total size of pilot + data. values: int.
+pilot_size: 500 # pilot bits
+blocks_num: 10 # number of validation frames. values: int.
 
 # online training hyperparameters
 is_online_training: True # Whether to run the online training (as in ViterbiNet). values: [True, False].
 loss_type: 'CrossEntropy' # Loss mechanism_type. values: 'BCE','CrossEntropy','MSE'.
 optimizer_type: 'Adam' # Optimizer mechanism_type. values: 'Adam','RMSprop','SGD'.
+seed: 0 # run seed
 
 # concept drift mechanism
-mechanism: 'periodic' # ['always','constant', 'random',...]
-drift_detection_method: None # ['none', 'ddm', ...] applicable only when mechanism is set to 'drift'
-drift_detection_method_hp: None
-throttler: 0
+mechanism: periodic # ['always','random','drift','periodic']
+period: 5
+drift_detection_method: 'DDM' # ['DDM','PHT','HT']
+drift_detection_method_hp: { 'out_control_level': 3,'min_instances_ddm': 500,
+                             'min_instances_pht': 10000,'threshold': 50, 'delta': 0.1 }

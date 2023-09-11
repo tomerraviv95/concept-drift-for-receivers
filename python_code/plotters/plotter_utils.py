@@ -1,5 +1,4 @@
 import datetime
-import math
 import os
 from typing import List, Tuple, Dict
 
@@ -137,7 +136,7 @@ def populate_sers_dict(all_curves: List[Tuple[float, str]], names: List[str], pl
             if plot_type == 'plot_ber_aggregated':
                 agg_ser = (np.cumsum(avg_ser_trials) / np.arange(1, len(ser[0]) + 1))
                 sers_dict[method_name] = agg_ser
-                total_actions_dict[method_name] = np.sum(train_idn[0])
+                total_actions_dict[method_name] = int(np.sum(train_idn) / len(train_idn))
             else:
                 raise ValueError("No such plot mechanism_type!")
 
@@ -147,7 +146,8 @@ def populate_sers_dict(all_curves: List[Tuple[float, str]], names: List[str], pl
 def plot_common_aggregated(names: List[str], sers_dict: Dict[str, np.ndarray], annotation_dict: Dict[str, np.ndarray],
                            values: List[float], total_actions_dict: Dict[str, List]):
     for method_name in names:
-        plt.plot(values, sers_dict[method_name], label=method_name.replace("DriftDetectionDriven","") + " " + f'[{total_actions_dict[method_name]}]',
+        plt.plot(values, sers_dict[method_name],
+                 label=method_name.replace("DriftDetectionDriven", "") + " " + f'[{total_actions_dict[method_name]}]',
                  color=get_color(method_name),
                  marker=get_marker(method_name), markersize=16,
                  linestyle=get_linestyle(method_name), linewidth=3.2,

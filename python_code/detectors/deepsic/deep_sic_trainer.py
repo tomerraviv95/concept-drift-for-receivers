@@ -143,7 +143,6 @@ class DeepSICTrainer(Trainer):
         global HT_s0_t_0, HT_s0_t_1, HT_s0_plot, HT_s0_vec_users, HT_s0_t_1_multivariate
         global HT_s1_t_0, HT_s1_t_1
         global prob_vec_plot
-        KL_model_sum = [[[] for j in range(ITERATIONS)] for jj in range(N_USER)]
 
         for i in range(ITERATIONS):
             probs_vec = self.calculate_posteriors(self.detector, i + 1, probs_vec, rx)

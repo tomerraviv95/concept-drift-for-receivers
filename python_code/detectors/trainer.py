@@ -112,7 +112,8 @@ class Trainer(object):
         """
         print(f'Evaluating concept drift of type: {conf.mechanism}')
         total_ber = []
-        block_idn_train = [0 for _ in range(conf.blocks_num)]  # to keep track of index of block where the model was retrained
+        block_idn_train = [0 for _ in
+                           range(conf.blocks_num)]  # to keep track of index of block where the model was retrained
         if conf.mechanism == 'drift':
             print(conf.drift_detection_method)
 
@@ -122,6 +123,7 @@ class Trainer(object):
         self.init_priors()
         # initialize concept drift mechanism_type
         drift_mechanism = DriftMechanismWrapper(conf.mechanism)
+        kwargs = {'block_ind': -1}
         # detect sequentially
         for block_ind in range(conf.blocks_num):
             print('*' * 20)
@@ -130,12 +132,6 @@ class Trainer(object):
             # split words into data and pilot part
             tx_pilot, tx_data = tx[:conf.pilot_size], tx[conf.pilot_size:]
             rx_pilot, rx_data = rx[:conf.pilot_size], rx[conf.pilot_size:]
-            if conf.channel_type in ChannelModes.MIMO.name:
-                detected_pilot = self.forward_pilot(rx_pilot, tx_pilot, self.pilots_probs_vec)
-            else:
-                detected_pilot = self.forward(rx_pilot, self.probs_vec)
-            error_rate = calculate_error_rate(detected_pilot, tx_pilot[:, :rx.shape[1]])
-            kwargs = {'block_ind':block_ind,'error_rate':error_rate,'rx':rx,'ht':self.ht}
             if (conf.is_online_training and drift_mechanism.is_train(kwargs)):
                 print('re-training')
                 if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == 'drift':
@@ -149,6 +145,12 @@ class Trainer(object):
             # calculate accuracy
             ber = calculate_ber(detected_word, tx_data[:, :rx.shape[1]])
             print(f'current: {block_ind, ber}')
+            if conf.channel_type in ChannelModes.MIMO.name:
+                detected_pilot = self.forward_pilot(rx_pilot, tx_pilot, self.pilots_probs_vec)
+            else:
+                detected_pilot = self.forward(rx_pilot, self.probs_vec)
+            error_rate = calculate_error_rate(detected_pilot, tx_pilot[:, :rx.shape[1]])
+            kwargs = {'block_ind': block_ind, 'error_rate': error_rate, 'rx': rx, 'ht': self.ht}
             total_ber.append(ber)
             self.init_priors()
 
