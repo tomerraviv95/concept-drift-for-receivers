@@ -8,7 +8,7 @@ if __name__ == '__main__':
     run_params_obj = RunParams(run_over=run_over,
                                trial_num=trial_num)
 
-    label_name = PlotType.RNNFigure
+    label_name = PlotType.DeepSICFigure
 
     print(label_name.name)
     params_dicts, methods_list, values, xlabel, ylabel, plot_type, drift_methods_list = get_config(label_name.name)

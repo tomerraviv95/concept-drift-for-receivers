@@ -75,10 +75,10 @@ def get_config(label_name: str) -> Tuple[List[Dict], list, list, str, str, str]:
         ]
         drift_detection_methods = [
             {'drift_detection_method': 'DDM',
-             'drift_detection_method_hp': {'alpha_ddm': 3.5, 'beta_ddm': 0.2},
+             'drift_detection_method_hp': {'alpha_ddm': 3.5, 'beta_ddm': 0.3},
              },
             {'drift_detection_method': 'PHT',
-             'drift_detection_method_hp': {'beta_pht': 0.25, 'delta_pht': 0.85, 'lambda_pht': 0.01},
+             'drift_detection_method_hp': {'beta_pht': 0.25, 'delta_pht': 0.825, 'lambda_pht': 0.01},
              },
             {'drift_detection_method': 'HT',
              'drift_detection_method_hp': {'ht_threshold': 1},
