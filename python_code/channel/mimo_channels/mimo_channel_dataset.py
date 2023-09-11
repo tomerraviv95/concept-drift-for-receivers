@@ -7,7 +7,6 @@ from numpy.random import default_rng
 
 from python_code.channel.channels_hyperparams import N_ANT, N_USER
 from python_code.channel.mimo_channels.cost_mimo_channel import Cost2100MIMOChannel
-from python_code.channel.mimo_channels.sed_channel import SEDChannel
 from python_code.channel.modulator import BPSKModulator
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModels
@@ -28,8 +27,7 @@ mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 conf = Config()
 
-MIMO_CHANNELS_DICT = {ChannelModels.Synthetic.name: SEDChannel,
-                      ChannelModels.Cost2100.name: Cost2100MIMOChannel}
+MIMO_CHANNELS_DICT = {ChannelModels.Cost2100.name: Cost2100MIMOChannel}
 
 
 class MIMOChannel:
@@ -55,9 +53,7 @@ class MIMOChannel:
 
     def get_vectors(self, snr: float, index: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         # get channel values
-        if conf.channel_model == ChannelModels.Synthetic.name:
-            h = SEDChannel.calculate_channel(N_ANT, N_USER, index, conf.fading_in_channel)
-        elif conf.channel_model == ChannelModels.Cost2100.name:
+        if conf.channel_model == ChannelModels.Cost2100.name:
             h = Cost2100MIMOChannel.calculate_channel(N_ANT, N_USER, index, conf.fading_in_channel)
         else:
             raise ValueError("No such channel model!!!")

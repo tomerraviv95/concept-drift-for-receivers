@@ -1,16 +1,18 @@
 import math
 
+import torch
+
 
 class DriftPHT:
 
-    def __init__(self, beta, delta, lambda_value):
+    def __init__(self, beta: float, delta: float, lambda_value: float):
         self.beta = beta
         self.delta = delta
         self.lambda_value = lambda_value
         self.mu_t_prev = 0
         self.previous_distance = None
 
-    def check_drift(self, samples_vector):
+    def check_drift(self, samples_vector: torch.Tensor):
         average = samples_vector.mean()
         mu_t = self.beta * average + (1 - self.beta) * self.mu_t_prev
         norm = abs(samples_vector - mu_t)

@@ -1,3 +1,5 @@
+from typing import Dict
+
 from python_code.channel.channels_hyperparams import N_USER
 from python_code.drift_mechanisms.ddm import DriftDDM
 from python_code.drift_mechanisms.ht import DriftHT
@@ -16,7 +18,7 @@ class DriftMechanismWrapper:
             self.n_users = N_USER
         self.drift_mechanism_list = [DRIFT_MECHANISMS_DICT[mechanism_type]() for _ in range(self.n_users)]
 
-    def is_train(self, kwargs):
+    def is_train(self, kwargs: Dict):
         if kwargs['block_ind'] == -1:
             return True
         for user, drift_mechanism in enumerate(self.drift_mechanism_list):
@@ -26,12 +28,12 @@ class DriftMechanismWrapper:
 
 
 class AlwaysDriftMechanism:
-    def is_train(self, **kwargs):
+    def is_train(self, **kwargs: Dict):
         return True
 
 
 class PeriodicMechanism:
-    def is_train(self, block_ind, **kwargs):
+    def is_train(self, block_ind: int, **kwargs: Dict):
         if (block_ind + 1) % conf.period == 0:
             return True
 
@@ -54,7 +56,7 @@ class DriftDetectionDriven:
         elif conf.drift_detection_method == 'HT':
             self.drift_detector = self.drift_detector(threshold=conf.drift_detection_method_hp['ht_threshold'])
 
-    def is_train(self, user, **kwargs):
+    def is_train(self, user: int, **kwargs: Dict):
         if conf.drift_detection_method == 'DDM':
             return self.drift_detector.check_drift(kwargs['error_rate'][:, user])
         elif conf.drift_detection_method == 'PHT':

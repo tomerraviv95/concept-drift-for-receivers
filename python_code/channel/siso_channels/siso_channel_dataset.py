@@ -8,7 +8,6 @@ from numpy.random import default_rng
 from python_code.channel.channels_hyperparams import MEMORY_LENGTH
 from python_code.channel.modulator import BPSKModulator
 from python_code.channel.siso_channels.cost_siso_channel import Cost2100SISOChannel
-from python_code.channel.siso_channels.isi_awgn_channel import ISIAWGNChannel
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModels
 from python_code.utils.trellis_utils import break_transmitted_siso_word_to_symbols
@@ -27,8 +26,7 @@ mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.family'] = 'STIXGeneral'
 conf = Config()
 
-SISO_CHANNELS_DICT = {ChannelModels.Synthetic.name: ISIAWGNChannel,
-                      ChannelModels.Cost2100.name: Cost2100SISOChannel}
+SISO_CHANNELS_DICT = {ChannelModels.Cost2100.name: Cost2100SISOChannel}
 
 
 class SISOChannel:
@@ -60,9 +58,7 @@ class SISOChannel:
     def get_vectors(self, snr: float, index: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         # get channel values
         # transmit through noisy channel
-        if conf.channel_model == ChannelModels.Synthetic.name:
-            h = ISIAWGNChannel.calculate_channel(MEMORY_LENGTH, fading=conf.fading_in_channel, index=index)
-        elif conf.channel_model == ChannelModels.Cost2100.name:
+        if conf.channel_model == ChannelModels.Cost2100.name:
             h = Cost2100SISOChannel.calculate_channel(MEMORY_LENGTH, fading=conf.fading_in_channel, index=index)
         else:
             raise ValueError("No such channel model!!!")
@@ -79,7 +75,7 @@ if __name__ == "__main__":
     total_h_mag = np.concatenate(total_h_mag)
     plt.figure()
     for i in range(MEMORY_LENGTH):
-        plt.plot(total_h_mag[:, i], label=f'user {i+ 1}', linewidth=3.2)
+        plt.plot(total_h_mag[:, i], label=f'user {i + 1}', linewidth=3.2)
     plt.ylabel(r'Magnitude')
     plt.xlabel(r'Block Index')
     plt.grid(True, which='both')
