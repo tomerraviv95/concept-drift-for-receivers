@@ -11,6 +11,12 @@ from python_code.utils.constants import ChannelModes
 conf = Config()
 
 
+class TRAINING_TYPES(Enum):
+    ALWAYS = 'ALWAYS'
+    DRIFT = 'DRIFT'
+    PERIODIC = 'PERIODIC'
+
+
 class DriftMechanismWrapper:
 
     def __init__(self, mechanism_type: str):

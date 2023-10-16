@@ -1,7 +1,7 @@
 # channel
 channel_type: 'MIMO' # Channel mechanism_type values: ['SISO','MIMO'].
 channel_model: 'Cost2100' # Physical channel models: ['Cost2100','Synthetic']
-detector_type: 'model' # 'model' or 'black_box'
+detector_type: 'black_box' # 'model' or 'black_box'
 linear: True # channel linearity. Boolean value.
 fading_in_channel: False # If the channel is fading/non-fading. values: [True, False]
 snr: 12 # validation SNR value. values: float.

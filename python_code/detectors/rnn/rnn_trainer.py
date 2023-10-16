@@ -22,7 +22,6 @@ class RNNTrainer(Trainer):
         self.memory_length = MEMORY_LENGTH
         self.n_user = 1
         self.n_ant = 1
-        self.probs_vec = None
         self.lr = 5e-3
         super().__init__()
 
@@ -46,7 +45,7 @@ class RNNTrainer(Trainer):
         loss = self.criterion(input=est, target=gt_states)
         return loss
 
-    def forward(self, rx: torch.Tensor, probs_vec: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, rx: torch.Tensor) -> torch.Tensor:
         # detect and decode
         detected_word = self.detector(rx.float(), phase='val')
         return detected_word

@@ -11,33 +11,11 @@ from python_code.detectors.deepsic.deep_sic_detector import DeepSICDetector
 from python_code.detectors.trainer import Trainer
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import HALF
+from python_code.utils.hotelling_test_utils import run_hotelling_test
 
 conf = Config()
 ITERATIONS = 3
 EPOCHS = 250
-
-dist_probs_vec = []
-KL_P_X = [[] for i in range(N_USER)]
-KL_Q_X = [[] for i in range(N_USER)]
-KL_5_probs_vec = []
-KL_model_probs_vec = []
-KLm_P_X = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-KLm_P_X_s0 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-KLm_P_X_s0_plot = [[] for i in range(N_USER)]
-KLm_P_X_s1 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-KLm_Q_X = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-KLm_Q_X_s0 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-KLm_Q_X_s1 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_s0_t_0 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_s0_t_1 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_s0_t_1_multivariate = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_s1_t_0 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_s1_t_1 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_t_2 = [[[] for j in range(ITERATIONS)] for i in range(N_USER)]
-HT_t_2_multivariate = [[] for i in range(N_USER)]
-HT_s0_plot = [[] for i in range(N_USER)]
-HT_s0_vec_users = []
-prob_vec_plot = []
 
 
 def prob_to_BPSK_symbol(p: torch.Tensor) -> torch.Tensor:
@@ -64,6 +42,8 @@ class DeepSICTrainer(Trainer):
         self.train_user = [True] * N_USER
         self.lr = 1e-3
         self.ht = [0] * N_USER
+        self.prev_ht_s1 = [[[] for _ in range(ITERATIONS)] for _ in range(self.n_user)]
+        self.prev_ht_s0 = [[[] for _ in range(ITERATIONS)] for _ in range(self.n_user)]
         super().__init__()
 
     def __str__(self):
@@ -129,69 +109,36 @@ class DeepSICTrainer(Trainer):
             # Training the DeepSIC networks for the iteration>1
             self.train_models(self.detector, i, tx_all, rx_all)
 
-    def forward(self, rx: torch.Tensor, probs_vec: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, rx: torch.Tensor) -> torch.Tensor:
         # detect and decode
-
+        self.init_priors()
         for i in range(ITERATIONS):
-            probs_vec = self.calculate_posteriors(self.detector, i + 1, probs_vec, rx)
-        detected_word = BPSKModulator.demodulate(prob_to_BPSK_symbol(probs_vec.float()))
-
+            self.probs_vec = self.calculate_posteriors(self.detector, i + 1, self.probs_vec, rx)
+        detected_word = BPSKModulator.demodulate(prob_to_BPSK_symbol(self.probs_vec.float()))
         return detected_word
 
-    def forward_pilot(self, rx: torch.Tensor, tx: torch.Tensor, probs_vec: torch.Tensor = None) -> torch.Tensor:
+    def forward_pilot(self, rx: torch.Tensor, tx: torch.Tensor) -> torch.Tensor:
+        self.init_priors()
         # detect and decode
-        global HT_s0_t_0, HT_s0_t_1, HT_s0_plot, HT_s0_vec_users, HT_s0_t_1_multivariate
-        global HT_s1_t_0, HT_s1_t_1
-
+        ht_s0_t_0 = [[[] for _ in range(ITERATIONS)] for _ in range(self.n_user)]
+        ht_s1_t_0 = [[[] for _ in range(ITERATIONS)] for _ in range(self.n_user)]
+        ht_mat = [[[] for _ in range(ITERATIONS)] for _ in range(self.n_user)]
         for i in range(ITERATIONS):
-            probs_vec = self.calculate_posteriors(self.detector, i + 1, probs_vec, rx)
+            self.pilots_probs_vec = self.calculate_posteriors(self.detector, i + 1, self.pilots_probs_vec, rx)
             for user in range(self.n_user):
                 rx_s0_idx = [i for i, x in enumerate(tx[:, user]) if x == 0]
                 rx_s1_idx = [i for i, x in enumerate(tx[:, user]) if x == 1]
-                ## HT
-                HT_s0_t_0[user][i] = probs_vec[rx_s0_idx, user].cpu().numpy()
-                HT_s1_t_0[user][i] = probs_vec[rx_s1_idx, user].cpu().numpy()
-                if np.shape(HT_s0_t_1[user][i])[0] != 0:  # initialize first comparison:
-                    # Do for symbol 0
-                    n0_t_0 = np.shape(HT_s0_t_0[user][i])[0]
-                    sample_mean_t_0_s0 = np.sum(HT_s0_t_0[user][i]) / n0_t_0
-                    cov_mat_t_0 = np.cov(HT_s0_t_0[user][i])
-                    n0_t_1 = np.shape(HT_s0_t_1[user][i])[0]
-                    sample_mean_t_1_s0 = np.sum(HT_s0_t_1[user][i]) / n0_t_1
-                    cov_mat_t_1 = np.cov(HT_s0_t_1[user][i])
-                    pooled_cov_mat_s0 = ((n0_t_0 - 1) * cov_mat_t_0 + (n0_t_1 - 1) * cov_mat_t_1) / \
-                                        (n0_t_0 + n0_t_1 - 2)
-
-                    # Do for symbol 1
-                    n1_t_0 = np.shape(HT_s1_t_0[user][i])[0]
-                    sample_mean_t_0_s1 = np.sum(HT_s1_t_0[user][i]) / n1_t_0
-                    cov_mat_t_0 = np.cov(HT_s1_t_0[user][i])
-                    n1_t_1 = np.shape(HT_s1_t_1[user][i])[0]
-                    sample_mean_t_1_s1 = np.sum(HT_s1_t_1[user][i]) / n1_t_1
-                    cov_mat_t_1 = np.cov(HT_s1_t_1[user][i])
-                    pooled_cov_mat_s1 = ((n1_t_0 - 1) * cov_mat_t_0 + (n1_t_1 - 1) * cov_mat_t_1) / \
-                                        (n1_t_0 + n1_t_1 - 2)
-
-                    # If linear add weigthed by number of samples each symbol
-                    HT_t_2_s0 = (n0_t_0 * n0_t_1) / (n0_t_0 + n0_t_1) * \
-                                np.transpose(sample_mean_t_0_s0 - sample_mean_t_1_s0) * \
-                                np.transpose(pooled_cov_mat_s0) * (sample_mean_t_0_s0 - sample_mean_t_1_s0)
-
-                    # combine
-                    pilot_number = tx[:, user].shape[0]
-                    HT_t_2_s1 = (n1_t_0 * n1_t_1) / (n1_t_0 + n1_t_1) * \
-                                np.transpose(sample_mean_t_0_s1 - sample_mean_t_1_s1) * \
-                                np.transpose(pooled_cov_mat_s1) * (sample_mean_t_0_s1 - sample_mean_t_1_s1)
-                    HT_t_2[user][i] = n0_t_0 / pilot_number * HT_t_2_s0 + n1_t_0 / pilot_number * HT_t_2_s1
-
-                    # save previous distribution
-                HT_s0_t_1[user][i] = HT_s0_t_0[user][i].copy()
-                HT_s1_t_1[user][i] = HT_s1_t_0[user][i].copy()
-
-        if np.prod(np.shape(HT_t_2[self.n_user - 1][ITERATIONS - 1])) != 0:
-            HT_s0_plot.append([row[ITERATIONS - 1] for row in HT_t_2])
-            self.ht = [row[ITERATIONS - 1] for row in HT_t_2]
-        detected_word = BPSKModulator.demodulate(prob_to_BPSK_symbol(probs_vec.float()))
+                # HT
+                ht_s0_t_0[user][i] = self.pilots_probs_vec[rx_s0_idx, user].cpu().numpy()
+                ht_s1_t_0[user][i] = self.pilots_probs_vec[rx_s1_idx, user].cpu().numpy()
+                if np.shape(self.prev_ht_s0[user][i])[0] != 0:
+                    run_hotelling_test(ht_mat, ht_s0_t_0, ht_s1_t_0, self.prev_ht_s0, self.prev_ht_s1, i, tx, user)
+                # save previous distribution
+                self.prev_ht_s0[user][i] = ht_s0_t_0[user][i].copy()
+                self.prev_ht_s1[user][i] = ht_s1_t_0[user][i].copy()
+        if np.prod(np.shape(ht_mat[self.n_user - 1][ITERATIONS - 1])) != 0:
+            self.ht = [row[ITERATIONS - 1] for row in ht_mat]
+        detected_word = BPSKModulator.demodulate(prob_to_BPSK_symbol(self.pilots_probs_vec.float()))
         return detected_word
 
     def prepare_data_for_training(self, tx: torch.Tensor, rx: torch.Tensor, probs_vec: torch.Tensor) -> [

@@ -21,9 +21,7 @@ class VNETTrainer(Trainer):
         self.n_states = BPSKModulator.constellation_size ** self.memory_length
         self.n_user = 1
         self.n_ant = 1
-        #OLD: self.lr = 1e-3
         self.lr = 5e-3
-        self.probs_vec = None
         super().__init__()
 
     def __str__(self):
@@ -46,7 +44,7 @@ class VNETTrainer(Trainer):
         loss = self.criterion(input=est, target=gt_states)
         return loss
 
-    def forward(self, rx: torch.Tensor, probs_vec: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, rx: torch.Tensor) -> torch.Tensor:
         # detect and decode
         detected_word = self.detector(rx.float(), phase='val')
         return detected_word

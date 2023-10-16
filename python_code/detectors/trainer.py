@@ -9,7 +9,7 @@ from torch.optim import RMSprop, Adam, SGD
 from python_code import DEVICE
 from python_code.channel.channel_dataset import ChannelModelDataset
 from python_code.channel.channels_hyperparams import N_USER
-from python_code.drift_mechanisms.drift_mechanism_wrapper import DriftMechanismWrapper
+from python_code.drift_mechanisms.drift_mechanism_wrapper import DriftMechanismWrapper, TRAINING_TYPES
 from python_code.utils.config_singleton import Config
 from python_code.utils.constants import ChannelModes
 from python_code.utils.metrics import calculate_ber, calculate_error_rate
@@ -91,11 +91,17 @@ class Trainer(object):
         """
         pass
 
-    def forward(self, rx: torch.Tensor, probs_vec: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, rx: torch.Tensor) -> torch.Tensor:
         """
         Every trainer must have some forward pass for its detector
         """
         pass
+
+    def forward_pilot(self, rx_pilot: torch.Tensor, tx_pilot: torch.Tensor) -> torch.Tensor:
+        """
+        Every trainer must have some forward pass for its detector
+        """
+        return self.forward(rx_pilot)
 
     def init_priors(self):
         """
@@ -113,7 +119,7 @@ class Trainer(object):
         total_ber = []
         block_idn_train = [0 for _ in
                            range(conf.blocks_num)]  # to keep track of index of block where the model was retrained
-        if conf.mechanism == 'drift':
+        if conf.mechanism == TRAINING_TYPES.DRIFT.name:
             print(conf.drift_detection_method)
         # draw words for a given snr
         transmitted_words, received_words, hs = self.channel_dataset.__getitem__(snr_list=[conf.snr])
@@ -132,25 +138,21 @@ class Trainer(object):
             rx_pilot, rx_data = rx[:conf.pilot_size], rx[conf.pilot_size:]
             if (conf.is_online_training and drift_mechanism.is_train(kwargs)):
                 print('re-training')
-                if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == 'drift':
+                if conf.channel_type in ChannelModes.MIMO.name and conf.mechanism == TRAINING_TYPES.DRIFT.name:
                     for idx in range(N_USER):
                         self.train_user[idx] = True
                 # re-train the detector
                 self._online_training(tx_pilot, rx_pilot)
                 block_idn_train[block_ind] = 1
             # detect data part after training on the pilot part
-            detected_word = self.forward(rx_data, self.probs_vec)
+            detected_word = self.forward(rx_data)
             # calculate accuracy
             ber = calculate_ber(detected_word, tx_data[:, :rx.shape[1]])
             print(f'current: {block_ind, ber}')
-            if conf.channel_type in ChannelModes.MIMO.name:
-                detected_pilot = self.forward_pilot(rx_pilot, tx_pilot, self.pilots_probs_vec)
-            else:
-                detected_pilot = self.forward(rx_pilot, self.probs_vec)
+            detected_pilot = self.forward_pilot(rx_pilot, tx_pilot)
             error_rate = calculate_error_rate(detected_pilot, tx_pilot[:, :rx.shape[1]])
             kwargs = {'block_ind': block_ind, 'error_rate': error_rate, 'rx': rx, 'ht': self.ht}
             total_ber.append(ber)
-            self.init_priors()
 
         print(f'Final ser: {sum(total_ber) / len(total_ber)}, Total Re-trains: {sum(block_idn_train)}')
         return total_ber, block_idn_train
