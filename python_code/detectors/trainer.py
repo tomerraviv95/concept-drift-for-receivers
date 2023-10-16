@@ -35,7 +35,6 @@ class Trainer(object):
         # initialize matrices, datasets and detector
         self._initialize_dataloader()
         self._initialize_detector()
-        self.ht = None
         self.softmax = torch.nn.Softmax(dim=1)  # Single symbol probability inference
 
     def get_name(self):
@@ -116,7 +115,6 @@ class Trainer(object):
                            range(conf.blocks_num)]  # to keep track of index of block where the model was retrained
         if conf.mechanism == 'drift':
             print(conf.drift_detection_method)
-
         # draw words for a given snr
         transmitted_words, received_words, hs = self.channel_dataset.__getitem__(snr_list=[conf.snr])
         # either None or in case of DeepSIC intializes the priors

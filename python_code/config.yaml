@@ -1,7 +1,7 @@
 # channel
-channel_type: 'SISO' # Channel mechanism_type values: ['SISO','MIMO'].
+channel_type: 'MIMO' # Channel mechanism_type values: ['SISO','MIMO'].
 channel_model: 'Cost2100' # Physical channel models: ['Cost2100','Synthetic']
-detector_type: 'black_box' # 'model' or 'black_box'
+detector_type: 'model' # 'model' or 'black_box'
 linear: True # channel linearity. Boolean value.
 fading_in_channel: False # If the channel is fading/non-fading. values: [True, False]
 snr: 12 # validation SNR value. values: float.
@@ -20,7 +20,7 @@ seed: 100 # run seed
 # concept drift mechanism
 mechanism: drift # ['always','drift','periodic']
 period: 10
-drift_detection_method: 'PHT' # ['DDM','PHT','HT']
+drift_detection_method: 'HT' # ['DDM','PHT','HT']
 drift_detection_method_hp: { 'alpha_ddm': 3, 'beta_ddm': 0.2,
                              'beta_pht': 0.5, 'delta_pht': 0.8, 'lambda_pht': 0.01,
                               'ht_threshold' : 2.5}

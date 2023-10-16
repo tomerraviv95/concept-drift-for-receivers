@@ -142,11 +142,9 @@ class DeepSICTrainer(Trainer):
         # detect and decode
         global HT_s0_t_0, HT_s0_t_1, HT_s0_plot, HT_s0_vec_users, HT_s0_t_1_multivariate
         global HT_s1_t_0, HT_s1_t_1
-        global prob_vec_plot
 
         for i in range(ITERATIONS):
             probs_vec = self.calculate_posteriors(self.detector, i + 1, probs_vec, rx)
-            temp_probs_vec = []
             for user in range(self.n_user):
                 rx_s0_idx = [i for i, x in enumerate(tx[:, user]) if x == 0]
                 rx_s1_idx = [i for i, x in enumerate(tx[:, user]) if x == 1]
@@ -189,11 +187,6 @@ class DeepSICTrainer(Trainer):
                     # save previous distribution
                 HT_s0_t_1[user][i] = HT_s0_t_0[user][i].copy()
                 HT_s1_t_1[user][i] = HT_s1_t_0[user][i].copy()
-
-                if i == ITERATIONS - 1:
-                    temp_probs_vec.append(probs_vec[rx_s0_idx, user].cpu().numpy())
-
-        prob_vec_plot.append(temp_probs_vec)  # save last iteration probs vec for all users
 
         if np.prod(np.shape(HT_t_2[self.n_user - 1][ITERATIONS - 1])) != 0:
             HT_s0_plot.append([row[ITERATIONS - 1] for row in HT_t_2])
